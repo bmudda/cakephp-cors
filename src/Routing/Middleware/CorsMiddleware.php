@@ -4,14 +4,18 @@ namespace Cors\Routing\Middleware;
 use Cake\Core\Configure;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
-class CorsMiddleware
+class CorsMiddleware implements MiddlewareInterface
 {
 
     /**
      * PHPCS docblock fix needed!
      */
-    public function __invoke(ServerRequestInterface $request, ResponseInterface $response, $next) {
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
+        $response = $handler->handle($request);
+
         if ($request->getHeader('Origin')) {
             $response = $response
                 ->withHeader('Access-Control-Allow-Origin', $this->_allowOrigin($request))
@@ -29,7 +33,7 @@ class CorsMiddleware
             }
         }
 
-        return $next($request, $response);
+        return $response;
     }
 
     /**

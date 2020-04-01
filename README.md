@@ -2,14 +2,14 @@
 
 [![Build Status](https://travis-ci.org/ozee31/cakephp-cors.svg?branch=master)](https://travis-ci.org/ozee31/cakephp-cors)
 
-A CakePHP (3.3+) plugin for activate cors domain in your application with [Middleware](http://book.cakephp.org/3.0/en/controllers/middleware.html).
+A CakePHP (4.0+) plugin for activate cors domain in your application with [Middleware](http://book.cakephp.org/4.0/en/controllers/middleware.html).
 
 [Learn more about CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS)
 
 ## Requirements
 
-- PHP version 5.6 or higher
-- CakePhp 3.3 or higher
+- PHP version 7.2 or higher
+- CakePhp 4.0 or higher
 
 ## Installation
 
@@ -165,4 +165,4 @@ If you don't want to overload exceptionRenderer, You must write
 ]
 ```
 
-[Read more](http://book.cakephp.org/3.0/en/development/errors.html#extend-the-baseerrorhandler)
+[Read more](http://book.cakephp.org/4.0/en/development/errors.html#extend-the-baseerrorhandler)
