@@ -9,37 +9,66 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 class CorsMiddleware implements MiddlewareInterface
 {
+    private const OPTIONS_METHOD = 'OPTIONS';
 
     /**
-     * PHPCS docblock fix needed!
+     * Process an incoming server request.
+     *
+     * @param ServerRequestInterface $request
+     * @param RequestHandlerInterface $handler
+     * @return ResponseInterface
      */
-    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    {
+        if ($request->getHeader('Origin') && strtoupper($request->getMethod()) === self::OPTIONS_METHOD) {
+            $response = new \Cake\Http\Response();
+            return $this->_getResponseWithHeaders($request, $response, self::OPTIONS_METHOD);
+        }
+
         $response = $handler->handle($request);
 
         if ($request->getHeader('Origin')) {
-            $response = $response
-                ->withHeader('Access-Control-Allow-Origin', $this->_allowOrigin($request))
-                ->withHeader('Access-Control-Allow-Credentials', $this->_allowCredentials())
-                ->withHeader('Access-Control-Max-Age', $this->_maxAge())
-                ->withHeader('Access-Control-Expose-Headers', $this->_exposeHeaders())
-            ;
-
-            if (strtoupper($request->getMethod()) === 'OPTIONS') {
-                $response = $response
-                    ->withHeader('Access-Control-Allow-Headers', $this->_allowHeaders($request))
-                    ->withHeader('Access-Control-Allow-Methods', $this->_allowMethods())
-                ;
-                return $response;
-            }
+            $response = $this->_getResponseWithHeaders($request, $response);
         }
 
         return $response;
     }
 
     /**
-     * PHPCS docblock fix needed!
+     * Add headers to reponse object
+     *
+     * @param ServerRequestInterface $request
+     * @param ResponseInterface $response
+     * @param string $method
+     * @return ResponseInterface
      */
-    private function _allowOrigin($request) {
+    private function _getResponseWithHeaders($request, $response, $method = null): ResponseInterface
+    {
+        if ($method === self::OPTIONS_METHOD) {
+
+            $response = $response
+                ->withHeader('Access-Control-Allow-Headers', $this->_allowHeaders($request))
+                ->withHeader('Access-Control-Allow-Methods', $this->_allowMethods());
+        }
+
+        $response = $response
+            ->withHeader('Access-Control-Allow-Origin', $this->_allowOrigin($request))
+            ->withHeader('Access-Control-Allow-Credentials', $this->_allowCredentials())
+            ->withHeader('Access-Control-Max-Age', $this->_maxAge())
+            ->withHeader('Access-Control-Expose-Headers', $this->_exposeHeaders());
+
+        return $response;
+
+    }
+
+    /**
+     * Get the Access-Control-Allow-Origin header value
+     *
+     * @param ServerRequestInterface $request
+     * @return string
+     */
+    private function _allowOrigin($request): string
+    {
         $allowOrigin = Configure::read('Cors.AllowOrigin');
         $origin = $request->getHeader('Origin');
 
@@ -59,27 +88,37 @@ class CorsMiddleware implements MiddlewareInterface
             return '';
         }
 
-        return (string)$allowOrigin;
+        return (string) $allowOrigin;
     }
 
     /**
-     * PHPCS docblock fix needed!
+     * Get the Access-Control-Allow-Credentials header value
+     *
+     * @return string
      */
-    private function _allowCredentials() {
+    private function _allowCredentials(): string
+    {
         return (Configure::read('Cors.AllowCredentials')) ? 'true' : 'false';
     }
 
     /**
-     * PHPCS docblock fix needed!
+     * Get the Access-Control-Allow-Methods header value
+     *
+     * @return string
      */
-    private function _allowMethods() {
+    private function _allowMethods(): string
+    {
         return implode(', ', (array) Configure::read('Cors.AllowMethods'));
     }
 
     /**
-     * PHPCS docblock fix needed!
+     * Get the Access-Control-Allow-Headers header value
+     *
+     * @param ServerRequestInterface $request
+     * @return string
      */
-    private function _allowHeaders($request) {
+    private function _allowHeaders($request): string
+    {
         $allowHeaders = Configure::read('Cors.AllowHeaders');
 
         if ($allowHeaders === true) {
@@ -90,9 +129,12 @@ class CorsMiddleware implements MiddlewareInterface
     }
 
     /**
-     * PHPCS docblock fix needed!
+     * Get the Access-Control-Expose-Headers header value
+     *
+     * @return string
      */
-    private function _exposeHeaders() {
+    private function _exposeHeaders(): string
+    {
         $exposeHeaders = Configure::read('Cors.ExposeHeaders');
 
         if (is_string($exposeHeaders) || is_array($exposeHeaders)) {
@@ -103,9 +145,12 @@ class CorsMiddleware implements MiddlewareInterface
     }
 
     /**
-     * PHPCS docblock fix needed!
+     * Get the Access-Control-Max-Age header value
+     *
+     * @return string
      */
-    private function _maxAge() {
+    private function _maxAge(): string
+    {
         $maxAge = (string) Configure::read('Cors.MaxAge');
 
         return ($maxAge) ?: '0';
