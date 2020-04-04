@@ -9,6 +9,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 class CorsMiddleware implements MiddlewareInterface
 {
+
     private const OPTIONS_METHOD = 'OPTIONS';
 
     /**
@@ -22,30 +23,25 @@ class CorsMiddleware implements MiddlewareInterface
     {
         if ($request->getHeader('Origin') && strtoupper($request->getMethod()) === self::OPTIONS_METHOD) {
             $response = new \Cake\Http\Response();
-            return $this->_getResponseWithHeaders($request, $response, self::OPTIONS_METHOD);
+            return $this->getResponseWithHeaders($request, $response, self::OPTIONS_METHOD);
         }
 
         $response = $handler->handle($request);
 
-        if ($request->getHeader('Origin')) {
-            $response = $this->_getResponseWithHeaders($request, $response);
-        }
-
-        return $response;
+        return $this->getResponseWithHeaders($request, $response);
     }
 
     /**
      * Add headers to reponse object
      *
-     * @param ServerRequestInterface $request
-     * @param ResponseInterface $response
+     * @param \Psr\Http\Message\ServerRequestInterface $request
+     * @param \Psr\Http\Message\ResponseInterface $response
      * @param string $method
-     * @return ResponseInterface
+     * @return void
      */
-    private function _getResponseWithHeaders($request, $response, $method = null): ResponseInterface
+    public function getResponseWithHeaders($request, $response, $method = null): ResponseInterface
     {
         if ($method === self::OPTIONS_METHOD) {
-
             $response = $response
                 ->withHeader('Access-Control-Allow-Headers', $this->_allowHeaders($request))
                 ->withHeader('Access-Control-Allow-Methods', $this->_allowMethods());
@@ -64,16 +60,16 @@ class CorsMiddleware implements MiddlewareInterface
     /**
      * Get the Access-Control-Allow-Origin header value
      *
-     * @param ServerRequestInterface $request
+     * @param \Psr\Http\Message\ServerRequestInterface $request
      * @return string
      */
-    private function _allowOrigin($request): string
+    private function _allowOrigin($request): ?string
     {
         $allowOrigin = Configure::read('Cors.AllowOrigin');
         $origin = $request->getHeader('Origin');
 
         if ($allowOrigin === true || $allowOrigin === '*') {
-            return $origin;
+            return $this->_flatten($origin);
         }
 
         if (is_array($allowOrigin)) {
@@ -81,7 +77,7 @@ class CorsMiddleware implements MiddlewareInterface
 
             foreach ($origin as $o) {
                 if (in_array($o, $allowOrigin)) {
-                    return $origin;
+                    return $this->_flatten($origin);
                 }
             }
 
@@ -106,15 +102,15 @@ class CorsMiddleware implements MiddlewareInterface
      *
      * @return string
      */
-    private function _allowMethods(): string
+    public function _allowMethods(): string
     {
-        return implode(', ', (array) Configure::read('Cors.AllowMethods'));
+        return $this->_flatten((array) Configure::read('Cors.AllowMethods'));
     }
 
     /**
      * Get the Access-Control-Allow-Headers header value
      *
-     * @param ServerRequestInterface $request
+     * @param \Psr\Http\Message\ServerRequestInterface $request
      * @return string
      */
     private function _allowHeaders($request): string
@@ -122,10 +118,10 @@ class CorsMiddleware implements MiddlewareInterface
         $allowHeaders = Configure::read('Cors.AllowHeaders');
 
         if ($allowHeaders === true) {
-            return $request->getHeader('Access-Control-Request-Headers');
+            return $this->_flatten($request->getHeader('Access-Control-Request-Headers'));
         }
 
-        return implode(', ', (array) $allowHeaders);
+        return $this->_flatten((array) $allowHeaders);
     }
 
     /**
@@ -133,12 +129,12 @@ class CorsMiddleware implements MiddlewareInterface
      *
      * @return string
      */
-    private function _exposeHeaders(): string
+    private function _exposeHeaders(): ?string
     {
         $exposeHeaders = Configure::read('Cors.ExposeHeaders');
 
         if (is_string($exposeHeaders) || is_array($exposeHeaders)) {
-            return implode(', ', (array) $exposeHeaders);
+            return $this->_flatten((array) $exposeHeaders);
         }
 
         return '';
@@ -149,10 +145,25 @@ class CorsMiddleware implements MiddlewareInterface
      *
      * @return string
      */
-    private function _maxAge(): string
+    private function _maxAge(): ?string
     {
         $maxAge = (string) Configure::read('Cors.MaxAge');
 
         return ($maxAge) ?: '0';
+    }
+
+    /**
+     * Method to flatten an array into a string
+     *
+     * @param array $value
+     * @return string|null
+     */
+    private function _flatten($value): ?string
+    {
+        if (is_array($value)) {
+            $value = implode(', ', $value);
+        }
+
+        return $value;
     }
 }
