@@ -6,11 +6,13 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Cake\Http\Response;
 
 class CorsMiddleware implements MiddlewareInterface
 {
 
     private const OPTIONS_METHOD = 'OPTIONS';
+    private const ORIGIN_HEADER = 'Origin';
 
     /**
      * Process an incoming server request.
@@ -21,8 +23,8 @@ class CorsMiddleware implements MiddlewareInterface
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        if ($request->getHeader('Origin') && strtoupper($request->getMethod()) === self::OPTIONS_METHOD) {
-            $response = new \Cake\Http\Response();
+        if ($request->getHeader(Self::ORIGIN_HEADER) && strtoupper($request->getMethod()) === self::OPTIONS_METHOD) {
+            $response = new Response();
             return $this->getResponseWithHeaders($request, $response, self::OPTIONS_METHOD);
         }
 
@@ -66,7 +68,7 @@ class CorsMiddleware implements MiddlewareInterface
     private function _allowOrigin($request): ?string
     {
         $allowOrigin = Configure::read('Cors.AllowOrigin');
-        $origin = $request->getHeader('Origin');
+        $origin = $request->getHeader(Self::ORIGIN_HEADER);
 
         if ($allowOrigin === true || $allowOrigin === '*') {
             return $this->_flatten($origin);
